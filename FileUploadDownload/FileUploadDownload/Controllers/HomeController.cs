@@ -23,7 +23,7 @@ namespace FileUploadDownload.Controllers
         }
 
      [HttpPost]
-     public IActionResult Upload(FileUploadDownloadViewModel model)
+     public async Task<IActionResult> Upload(FileUploadDownloadViewModel model)
         {
             var file = model.File;
             if(file.Length>0)
@@ -31,13 +31,15 @@ namespace FileUploadDownload.Controllers
                 string path = Path.Combine(_enviroment.WebRootPath, "images");
                 using (var fileStream = new FileStream(Path.Combine(path, file.FileName), FileMode.Create))
                 {
-                    file.CopyTo(fileStream);
+                    await file.CopyToAsync(fileStream);
                 }
-                model.destination = $"/images{file.FileName}";
+                model.destination = $"/images/{file.FileName}";
                 model.extension = Path.GetExtension(file.FileName).Substring(1);
                 return Ok(model);
             }
             return BadRequest();
         }
+     
+        
     }
 }

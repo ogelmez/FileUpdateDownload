@@ -8,38 +8,48 @@
         <link href="~/lib/bootstrap/dist/css/bootstrap.css" rel="stylesheet" />
         <link href="~/lib/bootstrap/dist/css/custom.css" rel="stylesheet" />
     </head>
-<body class="text-center">
-    <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
-        <header class="masthead mb-auto">
-            <div class="inner">
-                <h3 class="masthead-brand">FileUploadDownload</h3>
-                <nav class="nav nav-masthead justify-content-center">
-                    <a class="nav-link active" href="#">Upload</a>
-                    <a class="nav-link" href="#">Download</a>
-                </nav>
-            </div>
-        </header>
-
-        <main role="main" class="inner cover">
-            <h1 class="cover-heading">File Upload</h1>
-            <p class="lead">This button file uploading under wwroot/images.</p>
-            <p class="lead">
-                <div>
-                    <input type="file" class="btn btn-lg btn-secondary" />
+    <body class="text-center">
+        <div class="cover-container d-flex w-100 h-100 p-3 mx-auto flex-column">
+            <header class="masthead mb-auto">
+                <div class="inner">
+                    <h3 class="masthead-brand">FileUploadDownload</h3>
+                    <nav class="nav nav-masthead justify-content-center">
+                        <a class="nav-link active" href="#">Upload & Download</a>
+                       
+                    </nav>
                 </div>
-            </p>
+            </header>
 
-        </main>
+            <main role="main" class="inner cover">
+                <h1 class="cover-heading">File Upload</h1>
+                <p class="lead">This button file uploading under wwroot/images.</p>
+                <p class="lead">
+                    <div id="upload">
+                        <input type="file" class="btn btn-lg btn-secondary" />
+                    </div>
+                </p>
+                <h1 class="cover-heading">File Download</h1>
+                <p class="lead">This button downloading with BLOB.</p>
+                <p class="lead">
+                    <div id="upload">
+                        <button  style="width:450px;" id="GetFile" placeholder="Download BLOB File" class="btn btn-lg btn-secondary"> Download File </button>
+                    </div>
+                </p>
 
-        <footer class="mastfoot mt-auto">
-            <div class="inner">
-                <p>Created by Ozan Gelmez</p>
-            </div>
-        </footer>
-    </div>
+                <div class="clearfix" style="margin:auto;"></div>
+               
+            </main>
 
 
-</body>
+            <footer class="mastfoot mt-auto">
+                <div class="inner">
+                    <p>Made by Ozan Gelmez</p>
+                </div>
+            </footer>
+        </div>
+
+
+    </body>
 
 <script src="~/lib/jquery/dist/jquery.min.js"></script>
 <script src="~/lib/bootstrap/dist/js/bootstrap.js"></script>
@@ -47,13 +57,37 @@
 <script>
 
     $(document).ready(function () {
+        $('#GetFile').on('click', function () {
+    $.ajax({
+        url: 'write any url a website',
+        method: 'GET',
+        xhrFields: {
+            responseType: 'blob'
+        },
+        success: function (data) {
+            var a = document.createElement('a');
+            var url = window.URL.createObjectURL(data);
+            a.href = url;
+            a.download = 'exampleDownload.pdf';
+            document.body.append(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+            $('body').append($('.clearfix').append("<p>Downloaded file " + a.download + "</p>"));
+        }
+    });
+});
+
         let onchange = function () {
             let _thisFunction = $(this)[0];
             let dataForm = new FormData();
             dataForm.append('File', _thisFunction.files[0]);
             let onSuccess = function (model) {
+                $('body').append($('.clearfix').append("<p>Uploaded file</p>"));
+                  $('body').append($('.clearfix').append($('<img>').prop('src', model.destination)));
                 console.log(model);
             };
+           
             $.ajax({
                 method: 'POST',
                 url: 'home/upload',
@@ -61,8 +95,9 @@
                 processData: false,
                 contentType: false
             }).done(onSuccess);
+          
+           
         };
-
         $(document).on('change', 'input[type=file]', onchange);
     });
 </script>

@@ -1,0 +1,105 @@
+(click)="createBasavuruFormReport()" 
+
+ //"Default": "Server=(LocalDb)\\MSSQLLocalDB; Database=sausem; Trusted_Connection=True;"
+
+
+Front-end
+
+  createTeorikSinavGirisReport() {
+        let basvuru = this.adayBasvuruGoruntuleDto.basvuruDto;
+        abp.ui.setBusy();
+
+        this._fileService.getTeorikSinavGirisBelgesi(basvuru.id)
+            .pipe(finalize(() => { abp.ui.clearBusy(); }))
+            .subscribe(data => {
+                if (window.navigator.msSaveOrOpenBlob) {
+                    window.navigator.msSaveOrOpenBlob(data);
+                    this.notify.info(this.l('DownloadingPDF'));
+                } else {
+                    let fileURL = URL.createObjectURL(data);
+                    window.open(fileURL, 'report.pdf');
+                }
+            },
+                error => this.notify.error(this.l('Error'))
+            );
+
+    }
+
+Ýnterface
+
+  public async Task<BasvuruFormDto> GetBasvuruForm(int basvuruId)
+        {
+            var basvuru = await _basvuruRepository.GetAll().Include(b => b.OgrenciBilgi.User)
+                .Include(b=>b.OgrenciBilgi.AktifOgrenciBanka)
+                .Include(b=>b.OgrenciBilgi.OgrenciKimlikBilgi)
+                .Include(b=>b.OgrenciAdres)
+                  .FirstOrDefaultAsync(b => b.Id == basvuruId);
+           
+            
+            return new BasvuruFormDto {
+                AdSoyad= basvuru.OgrenciBilgi.User.Name + " " + basvuru.OgrenciBilgi.User.Surname,
+                Adres = basvuru.OgrenciAdres.Adresi,
+                TcNo =basvuru.OgrenciBilgi.User.UserName,
+                BasvuruNo=basvuru.SinavTanimId,
+                Email=basvuru.OgrenciBilgi.User.EmailAddress,
+                Telefon=basvuru.OgrenciBilgi.User.PhoneNumber,
+                IbanNo=basvuru.OgrenciBanka.IBAN,
+                BankaAdi=basvuru.OgrenciBanka.Banka,
+                HesapSahipAdi=basvuru.OgrenciBanka.AdSoyad,
+                SubeAdi=basvuru.OgrenciBanka.Sube
+
+
+            };
+        }
+
+
+Controller
+
+ public ReportController(IReportAppService reportAppService)
+        {
+            _reportAppService = reportAppService;
+
+            _jsReportService = new ReportingService("http://10.9.28.172:5488/", "admin", "polat2020");
+        }
+        private byte[] GetFromJSReport<T>(string reportKey, T belgeDto)
+        {
+           byte[] result = null;
+           
+           try
+           {             
+               var jsonobject = Newtonsoft.Json.JsonConvert.SerializeObject(belgeDto);
+               var report = _jsReportService.RenderAsync(reportKey, jsonobject).Result;
+               using (MemoryStream ms = new MemoryStream())
+               {
+                   report.Content.CopyTo(ms);
+                   result = ms.ToArray();
+               }
+           }
+           catch (Exception ex)
+           {
+               if (ex.InnerException != null && ex.InnerException.Message.Contains("jsreport.init()"))
+               {
+                   result = GetFromJSReport<T>(reportKey, belgeDto);
+               }
+               else
+               {
+                   throw ex;
+               }
+           }
+           return result;
+        } 
+
+çaðýrma metodu controller
+
+  public async Task<FileContentResult> GetBasvuruFormReport(int basvuruId)
+        {
+             var result = await _reportAppService.GetBasvuruForm(basvuruId);       
+
+            var bytes = this.GetFromJSReport("SygzecDLPV",result);
+            return File(bytes, "application/pdf", "BasvuruFormu");
+
+        }
+
+
+
+
